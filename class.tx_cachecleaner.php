@@ -31,8 +31,9 @@
  *  $Id$
  */
 class tx_cachecleaner {
-	var $extKey = 'cachecleaner';	// The extension key
-	var $extConf = array(); // The extension configuration
+	protected $extKey = 'cachecleaner';	// The extension key
+	protected $extConf = array(); // The extension configuration
+	protected $cleanerConfiguration = array(); // The cache cleaning configuration
 
 	/**
 	 * Constructor
@@ -40,6 +41,11 @@ class tx_cachecleaner {
 	 */
 	public function __construct() {
 		$this->extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$this->extKey]);
+			// If no cleaning configuration exists, load the default one
+		if (!isset($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'])) {
+			require_once(t3lib_extMgm::extPath($this->extKey, 'configuration_default.php'));
+		}
+		$this->cleanerConfiguration = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'];
 	}
 }
 ?>
