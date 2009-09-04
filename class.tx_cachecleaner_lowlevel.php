@@ -60,19 +60,26 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 		$this->cli_options[] = array('--optimize', $GLOBALS['LANG']->getLL('options.optimize'));
 	}
 
+	/**
+	 * This method is called by the lowlevel_cleaner script when running without the AUTOFIX option
+	 * It just returns a preview of could happen if the script was run for real
+	 *
+	 * @return	array	Result structure, as expected by the lowlevel_cleaner
+	 * @see tx_lowlevel_cleaner_core::cli_main()
+	 */
 	public function main() {
 			// Initialize result array
 		$resultArray = array(
 			'message' => $this->cli_help['name'] . chr(10) . chr(10) . $this->cli_help['description'],
 			'headers' => array(
-				'CACHE_TO_CLEAN' => array(
+				'RECORDS_TO_CLEAN' => array(
 					$GLOBALS['LANG']->getLL('cleantest.header'), $GLOBALS['LANG']->getLL('cleantest.description'), 1
 				)
 			),
-			'CACHE_TO_CLEAN' => array()
+			'RECORDS_TO_CLEAN' => array()
 		);
 		$result = $this->cleaner->analyzeTables();
-		$resultArray['CACHE_TO_CLEAN'] = $result;
+		$resultArray['RECORDS_TO_CLEAN'] = $result;
 		return $resultArray;
 	}
 }

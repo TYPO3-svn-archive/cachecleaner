@@ -50,14 +50,29 @@ class tx_cachecleaner {
 		$this->cleanerConfiguration = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'];
 	}
 
+	/**
+	 * This method counts the number of records that could be deleted, given the configuration
+	 * and returns information about this
+	 *
+	 * @return	array	List of informational messages, one per table
+	 */
 	public function analyzeTables() {
 		$results = array();
+			// Loop on all configured tables
 		foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
+				// Handle tables that have an explicit expiry field
 			if (isset($tableConfiguration['expireField'])) {
-				$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $tableConfiguration['expireField'] . " <= '" . $GLOBALS['EXEC_TIME'] . "'");
+				$field = $tableConfiguration['expireField'];
+				$dateLimit = $GLOBALS['EXEC_TIME'];
+
+					// Handle tables with a date field and a lifetime
+			} elseif (isset($tableConfiguration['dateField'])) {
+				$field = $tableConfiguration['dateField'];
+				$dateLimit = $GLOBALS['EXEC_TIME'] - (7 * 86400);
+			}
+				$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $field . " <= '" . $dateLimit . "'");
 				$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
 				$results[] = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
-			}
 		}
 		return $results;
 	}
