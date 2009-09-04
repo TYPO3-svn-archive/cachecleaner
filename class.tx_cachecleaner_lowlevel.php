@@ -52,6 +52,13 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			// Instantiate the cleaner itself
 		$this->cleaner = t3lib_div::makeInstance('tx_cachecleaner');
 
+			// If no cleaning configuration exists, load the default one
+			// TODO: remove this when finished testing
+		if (!isset($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'])) {
+			require_once(t3lib_extMgm::extPath($this->extKey, 'configuration_default.php'));
+		}
+		$this->cleanerConfiguration = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'];
+
 			// Load the language file and set base messages for the lowlevel interface
 		$GLOBALS['LANG']->includeLLFile('EXT:' . $this->extKey . '/locallang.xml');
 		$this->cli_help['name'] = $GLOBALS['LANG']->getLL('name');
@@ -81,6 +88,25 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 		$result = $this->cleaner->analyzeTables();
 		$resultArray['RECORDS_TO_CLEAN'] = $result;
 		return $resultArray;
+	}
+
+	/**
+	 * This method is called by the lowlevel_cleaner script when running *with* the AUTOFIX option
+	 * 
+	 * @return	void
+	 * @see tx_lowlevel_cleaner_core::cli_main()
+	 */
+	public function main_autofix() {
+			// Loop on all configured tables
+		foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
+			echo 'Cleaning old records for table "' . $table . '":' . chr(10);
+			if (($bypass = $this->cli_noExecutionCheck($table))) {
+				echo $bypass;
+			} else {
+				echo 'DONE';
+			}
+			echo chr(10);
+		}
 	}
 }
 ?>

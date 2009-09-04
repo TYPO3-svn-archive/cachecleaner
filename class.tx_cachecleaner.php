@@ -81,7 +81,6 @@ class tx_cachecleaner {
 	 * This is the main method that clears expired records from the database
 	 */
 	public function cleanTables() {
-
 	}
 }
 ?>
