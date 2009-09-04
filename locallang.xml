@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<T3locallang>
+	<meta type="array">
+		<type>module</type>
+		<description>Language labels for the lowevel module of &quot;cachecleaner&quot;</description>
+	</meta>
+	<data type="array">
+		<languageKey index="default" type="array">
+			<label index="name">Cache Cleaner -- To clean up old or expired records from cache tables</label>
+			<label index="description">
+Several cache tables have an expiry field, but are never cleaned up automatically. This script provides such a service.
+It can also clean up other tables that have no expiry field, basing itself on any date field and given a lifetime for expiry.
+			</label>
+			<label index="options.optimize">Run OPTIMIZE on the tables after all appropriate records have been deleted</label>
+			<label index="cleantest.header">Affected tables</label>
+			<label index="cleantest.description">Here is a list of all tables that could be cleaned up, along with the number of records that could be deleted given your current settings.</label>
+			<label index="recordsToDelete">Table %1$s: %2$d records to delete</label>
+		</languageKey>
+	</data>
+</T3locallang>

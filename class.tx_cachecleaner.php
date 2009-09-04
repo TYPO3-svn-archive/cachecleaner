@@ -41,11 +41,32 @@ class tx_cachecleaner {
 	 */
 	public function __construct() {
 		$this->extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$this->extKey]);
+
 			// If no cleaning configuration exists, load the default one
+			// TODO: remove this when finished testing
 		if (!isset($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'])) {
 			require_once(t3lib_extMgm::extPath($this->extKey, 'configuration_default.php'));
 		}
 		$this->cleanerConfiguration = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'];
+	}
+
+	public function analyzeTables() {
+		$results = array();
+		foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
+			if (isset($tableConfiguration['expireField'])) {
+				$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $tableConfiguration['expireField'] . " <= '" . $GLOBALS['EXEC_TIME'] . "'");
+				$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
+				$results[] = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
+			}
+		}
+		return $results;
+	}
+
+	/**
+	 * This is the main method that clears expired records from the database
+	 */
+	public function cleanTables() {
+
 	}
 }
 ?>
