@@ -122,7 +122,14 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 					// Perform the actual query and write down the results
 				$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $field . " <= '" . $dateLimit . "'");
 				$numDeletedRecords = $GLOBALS['TYPO3_DB']->sql_affected_rows($res);
-				echo sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords) . chr(10);
+				$message =  sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords);
+					// Optimize the table, if the optimize flag was set
+					// NOTE: this is MySQL specific and will not work with another database type
+				if (isset($this->cli_args['--optimize'])) {
+					$GLOBALS['TYPO3_DB']->sql_query('OPTIMIZE TABLE ' . $table);
+					$message .=  ' ' . $GLOBALS['LANG']->getLL('tableOptimized');
+				}
+				echo $message . chr(10);
 				echo 'DONE';
 			}
 			echo chr(10);
