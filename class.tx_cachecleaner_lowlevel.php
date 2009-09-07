@@ -25,7 +25,7 @@
 require_once(t3lib_extMgm::extPath('cachecleaner', 'class.tx_cachecleaner.php'));
 
 /** 
- * Base class wrapper for the lowlevel cleaner module
+ * This class provides the functionality for the tx_cachecleaner_cache module of the lowlevel_cleaner
  *
  * @author		Francois Suter <typo3@cobweb.ch>
  * @package		TYPO3
@@ -36,21 +36,12 @@ require_once(t3lib_extMgm::extPath('cachecleaner', 'class.tx_cachecleaner.php'))
 class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 	protected $extKey = 'cachecleaner';	// The extension key
 	protected $extConf = array(); // The extension configuration
-	/**
-	 * Instance of the main cache cleaner class
-	 * 
-	 * @var tx_cachecleaner
-	 */
-	protected $cleaner;
 
 	/**
 	 * Constructor
 	 */
 	public function __construct() {
 		parent::tx_lowlevel_cleaner_core();
-
-			// Instantiate the cleaner itself
-		$this->cleaner = t3lib_div::makeInstance('tx_cachecleaner');
 
 			// If no cleaning configuration exists, load the default one
 			// TODO: remove this when finished testing
@@ -85,8 +76,25 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			),
 			'RECORDS_TO_CLEAN' => array()
 		);
-		$result = $this->cleaner->analyzeTables();
-		$resultArray['RECORDS_TO_CLEAN'] = $result;
+
+			// Loop on all configured tables
+		foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
+				// Handle tables that have an explicit expiry field
+			if (isset($tableConfiguration['expireField'])) {
+				$field = $tableConfiguration['expireField'];
+				$dateLimit = $GLOBALS['EXEC_TIME'];
+
+				// Handle tables with a date field and a lifetime
+			} elseif (isset($tableConfiguration['dateField'])) {
+				$field = $tableConfiguration['dateField'];
+				$dateLimit = $GLOBALS['EXEC_TIME'] - (7 * 86400);
+			}
+				// Perform the actual query and write down the results
+			$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $field . " <= '" . $dateLimit . "'");
+			$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
+			$resultArray['RECORDS_TO_CLEAN'][] = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
+			$GLOBALS['TYPO3_DB']->sql_free_result($res);
+		}
 		return $resultArray;
 	}
 
