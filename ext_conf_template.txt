@@ -1,2 +1,0 @@
-# cat=basic//; type=boolean; label=Run optimization statements (OPTIMIZE) on tables after cleanup
-doOptimization = 15

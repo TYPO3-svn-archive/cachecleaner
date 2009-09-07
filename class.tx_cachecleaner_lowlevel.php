@@ -33,7 +33,7 @@
  */
 class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 	protected $extKey = 'cachecleaner';	// The extension key
-	protected $extConf = array(); // The extension configuration
+	protected $cleanerConfiguration = array(); // The configuration of tables to clean up
 
 	/**
 	 * Constructor
