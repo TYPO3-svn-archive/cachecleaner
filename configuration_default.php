@@ -15,23 +15,9 @@ $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['cachecleaner'] = array(
 		'cache_pages' => array(
 			'expireField' => 'expires'
 		),
-		'tx_realurl_pathcache' => array(
-			'expireField' => 'expire'
-		),
-		'tx_realurl_uniqalias' => array(
-			'expireField' => 'expire'
-		),
 		'cache_hash' => array(
 			'dateField' => 'tstamp',
 			'expirePeriod' => '7d'
-		),
-		'tx_realurl_urlencodecache' => array(
-			'dateField' => 'tstamp',
-			'expirePeriod' => '1m'
-		),
-		'tx_realurl_urldecodecache' => array(
-			'dateField' => 'tstamp',
-			'expirePeriod' => '1m'
 		)
 	)
 );
