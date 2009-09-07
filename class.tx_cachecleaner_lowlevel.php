@@ -41,11 +41,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 	public function __construct() {
 		parent::tx_lowlevel_cleaner_core();
 
-			// If no cleaning configuration exists, load the default one
-			// TODO: remove this when finished testing
-		if (!isset($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'])) {
-			require_once(t3lib_extMgm::extPath($this->extKey, 'configuration_default.php'));
-		}
+			// Load the cleaning configuration
 		$this->cleanerConfiguration = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'];
 
 			// Load the language file and set base messages for the lowlevel interface
