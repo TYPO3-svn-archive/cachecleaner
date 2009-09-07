@@ -22,8 +22,6 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-require_once(t3lib_extMgm::extPath('cachecleaner', 'class.tx_cachecleaner.php'));
-
 /** 
  * This class provides the functionality for the tx_cachecleaner_cache module of the lowlevel_cleaner
  *
@@ -87,7 +85,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 				// Handle tables with a date field and a lifetime
 			} elseif (isset($tableConfiguration['dateField'])) {
 				$field = $tableConfiguration['dateField'];
-				$dateLimit = $GLOBALS['EXEC_TIME'] - (7 * 86400);
+				$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
 			}
 				// Perform the actual query and write down the results
 			$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $field . " <= '" . $dateLimit . "'");
@@ -116,5 +114,64 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			echo chr(10);
 		}
 	}
+
+	/**
+	 * This method calculates the date limit given a duration from the cleaning configuration
+	 * The duration can be a single number, in which case it is considered to be a number of days
+	 * It can also take a character after the number to definie another period. The available periods are:
+	 *
+	 *	"h" = hour
+	 *	"d" = day
+	 *	"w" = week
+	 *	"m" = month (= 30 days)
+	 *
+	 * Examples
+	 *
+	 *	7d = 7 days
+	 *	4h = 4 hours
+	 *
+	 * @param	string		$duration: duration from the cache cleaning configuration
+	 * @return	integer		Date limit as a Unix timestamp
+	 */
+	protected function calculateDateLimit($duration) {
+			// Extract last character of duration string
+		$periodType = substr($duration, -1);
+
+			// If this character is a number, it is not a period type
+			// The whole duration is taken as the period's length and the default type is set to "d" (days)
+		if (is_numeric($periodType)) {
+			$periodType = 'd';
+			$periodLength = intval($duration);
+
+			// Get the period's length by removing the last character from the duration string
+		} else {
+			$periodLength = intval(substr($duration, 0, -1));
+		}
+
+			// Calculate the size of the expire period in seconds
+			// The default is 1 day
+		switch ($periodType) {
+			case 'h':
+				$interval = 3600;
+				break;
+			case 'w':
+				$interval = 7 * 86400;
+				break;
+			case 'm':
+				$interval = 30 * 86400;
+				break;
+			default:
+				$interval = 86400;
+				break;
+		}
+		$limit = $GLOBALS['EXEC_TIME'] - ($periodLength * $interval);
+		return $limit;
+	}
+}
+
+
+
+if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/cachecleaner/class.tx_cachecleaner_lowlevel.php'])	{
+	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/cachecleaner/class.tx_cachecleaner_lowlevel.php']);
 }
 ?>

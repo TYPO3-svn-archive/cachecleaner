@@ -27,11 +27,11 @@ $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['cachecleaner'] = array(
 		),
 		'tx_realurl_urlencodecache' => array(
 			'dateField' => 'tstamp',
-			'expirePeriod' => '7d'
+			'expirePeriod' => '1m'
 		),
 		'tx_realurl_urldecodecache' => array(
 			'dateField' => 'tstamp',
-			'expirePeriod' => '7d'
+			'expirePeriod' => '1m'
 		)
 	)
 );
