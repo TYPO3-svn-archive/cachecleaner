@@ -15,6 +15,7 @@ It can also clean up other tables that have no expiry field, basing itself on an
 			<label index="cleantest.header">Affected tables</label>
 			<label index="cleantest.description">Here is a list of all tables that could be cleaned up, along with the number of records that could be deleted given your current settings.</label>
 			<label index="recordsToDelete">Table %1$s: %2$d records to delete</label>
+			<label index="deletedRecords">%d records deleted</label>
 			<label index="cleaningRecords">Cleaning records for table "%s"</label>
 		</languageKey>
 	</data>

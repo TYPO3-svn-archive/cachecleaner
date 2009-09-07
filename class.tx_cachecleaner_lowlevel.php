@@ -109,6 +109,20 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			if (($bypass = $this->cli_noExecutionCheck($table))) {
 				echo $bypass;
 			} else {
+					// Handle tables that have an explicit expiry field
+				if (isset($tableConfiguration['expireField'])) {
+					$field = $tableConfiguration['expireField'];
+					$dateLimit = $GLOBALS['EXEC_TIME'];
+
+					// Handle tables with a date field and a lifetime
+				} elseif (isset($tableConfiguration['dateField'])) {
+					$field = $tableConfiguration['dateField'];
+					$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
+				}
+					// Perform the actual query and write down the results
+				$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $field . " <= '" . $dateLimit . "'");
+				$numDeletedRecords = $GLOBALS['TYPO3_DB']->sql_affected_rows($res);
+				echo sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords) . chr(10);
 				echo 'DONE';
 			}
 			echo chr(10);
