@@ -105,7 +105,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 	public function main_autofix() {
 			// Loop on all configured tables
 		foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
-			echo 'Cleaning old records for table "' . $table . '":' . chr(10);
+			echo sprintf($GLOBALS['LANG']->getLL('cleaningRecords'), $table) . ':' . chr(10);
 			if (($bypass = $this->cli_noExecutionCheck($table))) {
 				echo $bypass;
 			} else {
