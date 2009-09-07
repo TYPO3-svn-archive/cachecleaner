@@ -33,6 +33,7 @@
  */
 class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 	protected $extKey = 'cachecleaner';	// The extension key
+	protected $extConf = array(); // Extension configuration
 	protected $cleanerConfiguration = array(); // The configuration of tables to clean up
 
 	/**
@@ -40,6 +41,9 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 	 */
 	public function __construct() {
 		parent::tx_lowlevel_cleaner_core();
+
+			// Load the extension configuration
+		$this->extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$this->extKey]);
 
 			// Load the cleaning configuration
 		$this->cleanerConfiguration = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'];
@@ -124,6 +128,9 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 				if (isset($this->cli_args['--optimize'])) {
 					$GLOBALS['TYPO3_DB']->sql_query('OPTIMIZE TABLE ' . $table);
 					$message .=  ' ' . $GLOBALS['LANG']->getLL('tableOptimized');
+				}
+				if ($this->extConf['debug'] || TYPO3_DLOG) {
+					t3lib_div::devLog('(' . $table. ') ' . $message, $this->extKey, 0);
 				}
 				echo $message . chr(10);
 				echo 'DONE';
