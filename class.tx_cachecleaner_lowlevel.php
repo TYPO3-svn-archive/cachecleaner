@@ -87,6 +87,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 
 			// Loop on all configured tables
 		foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
+			$configurationOK = true;
 				// Handle tables that have an explicit expiry field
 			if (isset($tableConfiguration['expireField'])) {
 				$field = $tableConfiguration['expireField'];
@@ -96,11 +97,21 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			} elseif (isset($tableConfiguration['dateField'])) {
 				$field = $tableConfiguration['dateField'];
 				$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
+
+				// No proper configuration field was found, skip this table
+			} else {
+				$configurationOK = false;
 			}
-				// Perform the actual query and write down the results
-			$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $field . " <= '" . $dateLimit . "'");
-			$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
-			$resultArray['RECORDS_TO_CLEAN'][] = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
+
+				// If the configuration is ok, perform the actual query and write down the results
+			if ($configurationOK) {
+				$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $field . " <= '" . $dateLimit . "'");
+				$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
+				$message = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
+			} else {
+				$message = '!!! ' . sprintf($GLOBALS['LANG']->getLL('invalidConfigurationForTable'), $table);
+			}
+			$resultArray['RECORDS_TO_CLEAN'][] = $message;
 			$GLOBALS['TYPO3_DB']->sql_free_result($res);
 		}
 
@@ -130,6 +141,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			if (($bypass = $this->cli_noExecutionCheck($table))) {
 				echo $bypass;
 			} else {
+				$configurationOK = true;
 					// Handle tables that have an explicit expiry field
 				if (isset($tableConfiguration['expireField'])) {
 					$field = $tableConfiguration['expireField'];
@@ -139,19 +151,32 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 				} elseif (isset($tableConfiguration['dateField'])) {
 					$field = $tableConfiguration['dateField'];
 					$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
+
+					// No proper configuration field was found, skip this table
+				} else {
+					$configurationOK = false;
 				}
-					// Perform the actual query and write down the results
-				$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $field . " <= '" . $dateLimit . "'");
-				$numDeletedRecords = $GLOBALS['TYPO3_DB']->sql_affected_rows($res);
-				$message =  sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords);
-					// Optimize the table, if the optimize flag was set
-					// NOTE: this is MySQL specific and will not work with another database type
-				if (isset($this->cli_args['--optimize'])) {
-					$GLOBALS['TYPO3_DB']->sql_query('OPTIMIZE TABLE ' . $table);
-					$message .=  ' ' . $GLOBALS['LANG']->getLL('tableOptimized');
+
+					// If the configuration is ok, perform the actual query and write down the results
+				if ($configurationOK) {
+					$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $field . " <= '" . $dateLimit . "'");
+					$numDeletedRecords = $GLOBALS['TYPO3_DB']->sql_affected_rows($res);
+					$message =  sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords);
+					$severity = 0;
+						// Optimize the table, if the optimize flag was set
+						// NOTE: this is MySQL specific and will not work with another database type
+					if (isset($this->cli_args['--optimize'])) {
+						$GLOBALS['TYPO3_DB']->sql_query('OPTIMIZE TABLE ' . $table);
+						$message .=  ' ' . $GLOBALS['LANG']->getLL('tableOptimized');
+					}
+
+					// If the configuration is not ok, write out an error message
+				} else {
+					$message = $GLOBALS['LANG']->getLL('invalidConfiguration') . ' ' . $GLOBALS['LANG']->getLL('cleanupSkipped');
+					$severity = 2;
 				}
 				if ($this->extConf['debug'] || TYPO3_DLOG) {
-					t3lib_div::devLog('(' . $table. ') ' . $message, $this->extKey, 0);
+					t3lib_div::devLog('(' . $table. ') ' . $message, $this->extKey, $severity);
 				}
 				echo $message . chr(10);
 			}

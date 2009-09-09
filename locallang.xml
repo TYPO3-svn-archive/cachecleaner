@@ -18,6 +18,9 @@ It can also clean up other tables that have no expiry field, basing itself on an
 			<label index="deletedRecords">%d records deleted.</label>
 			<label index="cleaningRecords">Cleaning records for table "%s"</label>
 			<label index="tableOptimized">Table was also optimized.</label>
+			<label index="invalidConfiguration">Invalid configuration found.</label>
+			<label index="invalidConfigurationForTable">Table %s: Invalid configuration found.</label>
+			<label index="cleanupSkipped">Cleanup skipped!</label>
 		</languageKey>
 	</data>
 </T3locallang>
