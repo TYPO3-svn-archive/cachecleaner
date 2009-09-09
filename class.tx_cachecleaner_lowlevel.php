@@ -54,6 +54,16 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 		$this->cli_help['description'] = trim($GLOBALS['LANG']->getLL('description'));
 		$this->cli_help['author'] = 'Francois Suter, (c) 2009';
 		$this->cli_options[] = array('--optimize', $GLOBALS['LANG']->getLL('options.optimize'));
+
+			// Add entry to the sys_log to keep track of executions
+		$GLOBALS['BE_USER']->writelog(
+			4,
+			0,
+			0,
+			'cachecleaner',
+			'[cachecleaner]: Finished initializing',
+			array()
+		);
 	}
 
 	/**
@@ -93,6 +103,17 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			$resultArray['RECORDS_TO_CLEAN'][] = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
 			$GLOBALS['TYPO3_DB']->sql_free_result($res);
 		}
+
+			// Add entry to the sys_log to keep track of executions
+		$GLOBALS['BE_USER']->writelog(
+			4,
+			0,
+			0,
+			'cachecleaner',
+			'[cachecleaner]: Finished analyzing',
+			array()
+		);
+
 		return $resultArray;
 	}
 
@@ -133,10 +154,19 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 					t3lib_div::devLog('(' . $table. ') ' . $message, $this->extKey, 0);
 				}
 				echo $message . chr(10);
-				echo 'DONE';
 			}
 			echo chr(10);
 		}
+
+			// Add entry to the sys_log to keep track of executions
+		$GLOBALS['BE_USER']->writelog(
+			4,
+			0,
+			0,
+			'cachecleaner',
+			'[cachecleaner]: Finished cleaning up',
+			array()
+		);
 	}
 
 	/**
