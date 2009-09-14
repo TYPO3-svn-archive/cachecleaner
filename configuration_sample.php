@@ -1,14 +1,13 @@
 <?php
 /**
- * This file contains a base configuration for the Cache Cleaner
- * It will be loaded if no configuration is found in $TYPO3_CONF_VARS
- * It can also be used as an example for one's own configuration
+ * This file contains a smaple configuration for the Cache Cleaner
+ * It is *not* loaded by default
  *
  * @author		Francois Suter <typo3@cobweb.ch>
  * @package		TYPO3
  * @subpackage	tx_cachecleaner
  *
- *  $Id$
+ * $Id$
  */
 $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['cachecleaner'] = array(
 	'tables' => array(
@@ -18,6 +17,10 @@ $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['cachecleaner'] = array(
 		'cache_hash' => array(
 			'dateField' => 'tstamp',
 			'expirePeriod' => '7d'
+		),
+		'sys_log' => array(
+			'dateField' => 'tstamp',
+			'expirePeriod' => '1m'
 		)
 	)
 );
