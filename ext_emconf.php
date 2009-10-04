@@ -3,7 +3,7 @@
 ########################################################################
 # Extension Manager/Repository config file for ext: "cachecleaner"
 #
-# Auto generated 04-09-2009 10:21
+# Auto generated 04-10-2009 22:27
 #
 # Manual updates:
 # Only the data in the array - anything else is removed by next write.
@@ -30,17 +30,19 @@ $EM_CONF[$_EXTKEY] = array(
 	'clearCacheOnLoad' => 0,
 	'lockType' => '',
 	'author_company' => '',
-	'version' => '0.1.0',
+	'version' => '1.0.0',
 	'constraints' => array(
 		'depends' => array(
-			'php' => '5.0.0-0.0.0'
+			'php' => '5.0.0-0.0.0',
 		),
 		'conflicts' => array(
 		),
 		'suggests' => array(
 		),
 	),
-	'_md5_values_when_last_written' => 'a:5:{s:9:"ChangeLog";s:4:"424b";s:10:"README.txt";s:4:"ee2d";s:12:"ext_icon.gif";s:4:"1bdc";s:19:"doc/wizard_form.dat";s:4:"2503";s:20:"doc/wizard_form.html";s:4:"62af";}',
+	'_md5_values_when_last_written' => 'a:10:{s:9:"ChangeLog";s:4:"dcb6";s:10:"README.txt";s:4:"03b5";s:34:"class.tx_cachecleaner_lowlevel.php";s:4:"c7b1";s:24:"configuration_sample.php";s:4:"b620";s:16:"ext_autoload.php";s:4:"e9e3";s:21:"ext_conf_template.txt";s:4:"ef02";s:12:"ext_icon.gif";s:4:"c17e";s:17:"ext_localconf.php";s:4:"a50b";s:13:"locallang.xml";s:4:"adb9";s:14:"doc/manual.sxw";s:4:"b223";}',
+	'suggests' => array(
+	),
 );
 
 ?>
