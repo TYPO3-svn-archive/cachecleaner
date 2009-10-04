@@ -13,7 +13,7 @@
 $EM_CONF[$_EXTKEY] = array(
 	'title' => 'Cache Cleaner',
 	'description' => 'Automation tool for clearing up old entries in cache tables. For use with lowlevel cleaner.',
-	'category' => 'misc',
+	'category' => 'be',
 	'author' => 'Francois Suter (Cobweb)',
 	'author_email' => 'typo3@cobweb.ch',
 	'shy' => '',
