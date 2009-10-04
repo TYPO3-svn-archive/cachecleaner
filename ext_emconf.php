@@ -12,7 +12,7 @@
 
 $EM_CONF[$_EXTKEY] = array(
 	'title' => 'Cache Cleaner',
-	'description' => 'Automation tool for clearing up old entries in cache tables',
+	'description' => 'Automation tool for clearing up old entries in cache tables. For use with lowlevel cleaner.',
 	'category' => 'misc',
 	'author' => 'Francois Suter (Cobweb)',
 	'author_email' => 'typo3@cobweb.ch',
@@ -21,7 +21,8 @@ $EM_CONF[$_EXTKEY] = array(
 	'conflicts' => '',
 	'priority' => '',
 	'module' => '',
-	'state' => 'beta',
+	'doNotLoadInFE' => 1,
+	'state' => 'stable',
 	'internal' => '',
 	'uploadfolder' => 0,
 	'createDirs' => '',
