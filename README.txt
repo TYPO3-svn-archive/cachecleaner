@@ -1,2 +1,3 @@
+This extension provides a lowlevel script to clean up old entries from cache tables.
 
-Feel free to add some documentation or simply add a link to the online manual.
+Please refer to the manual for more information.
