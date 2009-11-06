@@ -88,6 +88,8 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			// Loop on all configured tables
 		foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
 			$configurationOK = true;
+			$field = '';
+			$dateLimit = '';
 				// Handle tables that have an explicit expiry field
 			if (isset($tableConfiguration['expireField'])) {
 				$field = $tableConfiguration['expireField'];
@@ -104,6 +106,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			}
 
 				// If the configuration is ok, perform the actual query and write down the results
+			$message = '';
 			if ($configurationOK) {
 				$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $field . " <= '" . $dateLimit . "'");
 				$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
@@ -142,6 +145,8 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 				echo $bypass;
 			} else {
 				$configurationOK = true;
+				$field = '';
+				$dateLimit = '';
 					// Handle tables that have an explicit expiry field
 				if (isset($tableConfiguration['expireField'])) {
 					$field = $tableConfiguration['expireField'];
@@ -158,11 +163,12 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 				}
 
 					// If the configuration is ok, perform the actual query and write down the results
+				$message = '';
+				$severity = 0;
 				if ($configurationOK) {
 					$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $field . " <= '" . $dateLimit . "'");
 					$numDeletedRecords = $GLOBALS['TYPO3_DB']->sql_affected_rows($res);
 					$message =  sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords);
-					$severity = 0;
 						// Optimize the table, if the optimize flag was set
 						// NOTE: this is MySQL specific and will not work with another database type
 					if (isset($this->cli_args['--optimize'])) {
@@ -218,6 +224,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 
 			// If this character is a number, it is not a period type
 			// The whole duration is taken as the period's length and the default type is set to "d" (days)
+		$periodLength = '';
 		if (is_numeric($periodType)) {
 			$periodType = 'd';
 			$periodLength = intval($duration);
@@ -229,6 +236,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 
 			// Calculate the size of the expire period in seconds
 			// The default is 1 day
+		$interval = 86400;
 		switch ($periodType) {
 			case 'h':
 				$interval = 3600;
@@ -238,9 +246,6 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 				break;
 			case 'm':
 				$interval = 30 * 86400;
-				break;
-			default:
-				$interval = 86400;
 				break;
 		}
 		$limit = $GLOBALS['EXEC_TIME'] - ($periodLength * $interval);
