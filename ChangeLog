@@ -1,6 +1,8 @@
 2009-11-06 Francois Suter (Cobweb)  <typo3@cobweb.ch>
 
 	* Ensured proper variables initialization everywhere
+	* Added feedback when extension is not configured
+	* Released to TER as version 1.0.1
 
 2009-10-04 Francois Suter (Cobweb)  <typo3@cobweb.ch>
 

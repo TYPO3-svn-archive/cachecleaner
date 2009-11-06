@@ -21,6 +21,7 @@ It can also clean up other tables that have no expiry field, basing itself on an
 			<label index="invalidConfiguration">Invalid configuration found.</label>
 			<label index="invalidConfigurationForTable">Table %s: Invalid configuration found.</label>
 			<label index="cleanupSkipped">Cleanup skipped!</label>
+			<label index="noConfiguration">No tables to clean. Please set up a configuration first.</label>
 		</languageKey>
 	</data>
 </T3locallang>

@@ -46,7 +46,9 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 		$this->extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$this->extKey]);
 
 			// Load the cleaning configuration
-		$this->cleanerConfiguration = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'];
+		if (isset($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables']) && is_array($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'])) {
+			$this->cleanerConfiguration = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['tables'];
+		}
 
 			// Load the language file and set base messages for the lowlevel interface
 		$GLOBALS['LANG']->includeLLFile('EXT:' . $this->extKey . '/locallang.xml');
@@ -85,65 +87,19 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			'RECORDS_TO_CLEAN' => array()
 		);
 
-			// Loop on all configured tables
-		foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
-			$configurationOK = true;
-			$field = '';
-			$dateLimit = '';
-				// Handle tables that have an explicit expiry field
-			if (isset($tableConfiguration['expireField'])) {
-				$field = $tableConfiguration['expireField'];
-				$dateLimit = $GLOBALS['EXEC_TIME'];
-
-				// Handle tables with a date field and a lifetime
-			} elseif (isset($tableConfiguration['dateField'])) {
-				$field = $tableConfiguration['dateField'];
-				$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
-
-				// No proper configuration field was found, skip this table
-			} else {
-				$configurationOK = false;
-			}
-
-				// If the configuration is ok, perform the actual query and write down the results
-			$message = '';
-			if ($configurationOK) {
-				$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $field . " <= '" . $dateLimit . "'");
-				$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
-				$message = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
-			} else {
-				$message = '!!! ' . sprintf($GLOBALS['LANG']->getLL('invalidConfigurationForTable'), $table);
-			}
+			// No tables are configured
+			// Issue information message to that effect
+		$logMessage = 'No tables configured';
+		if (count($this->cleanerConfiguration) == 0) {
+			$message = $GLOBALS['LANG']->getLL('noConfiguration');
 			$resultArray['RECORDS_TO_CLEAN'][] = $message;
-			$GLOBALS['TYPO3_DB']->sql_free_result($res);
-		}
+			if ($this->extConf['debug'] || TYPO3_DLOG) {
+				t3lib_div::devLog($message, $this->extKey, 2);
+			}
 
-			// Add entry to the sys_log to keep track of executions
-		$GLOBALS['BE_USER']->writelog(
-			4,
-			0,
-			0,
-			'cachecleaner',
-			'[cachecleaner]: Finished analyzing',
-			array()
-		);
-
-		return $resultArray;
-	}
-
-	/**
-	 * This method is called by the lowlevel_cleaner script when running *with* the AUTOFIX option
-	 * 
-	 * @return	void
-	 * @see tx_lowlevel_cleaner_core::cli_main()
-	 */
-	public function main_autofix() {
 			// Loop on all configured tables
-		foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
-			echo sprintf($GLOBALS['LANG']->getLL('cleaningRecords'), $table) . ':' . chr(10);
-			if (($bypass = $this->cli_noExecutionCheck($table))) {
-				echo $bypass;
-			} else {
+		} else {
+			foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
 				$configurationOK = true;
 				$field = '';
 				$dateLimit = '';
@@ -164,29 +120,17 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 
 					// If the configuration is ok, perform the actual query and write down the results
 				$message = '';
-				$severity = 0;
 				if ($configurationOK) {
-					$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $field . " <= '" . $dateLimit . "'");
-					$numDeletedRecords = $GLOBALS['TYPO3_DB']->sql_affected_rows($res);
-					$message =  sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords);
-						// Optimize the table, if the optimize flag was set
-						// NOTE: this is MySQL specific and will not work with another database type
-					if (isset($this->cli_args['--optimize'])) {
-						$GLOBALS['TYPO3_DB']->sql_query('OPTIMIZE TABLE ' . $table);
-						$message .=  ' ' . $GLOBALS['LANG']->getLL('tableOptimized');
-					}
-
-					// If the configuration is not ok, write out an error message
+					$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $field . " <= '" . $dateLimit . "'");
+					$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
+					$message = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
 				} else {
-					$message = $GLOBALS['LANG']->getLL('invalidConfiguration') . ' ' . $GLOBALS['LANG']->getLL('cleanupSkipped');
-					$severity = 2;
+					$message = '!!! ' . sprintf($GLOBALS['LANG']->getLL('invalidConfigurationForTable'), $table);
 				}
-				if ($this->extConf['debug'] || TYPO3_DLOG) {
-					t3lib_div::devLog('(' . $table. ') ' . $message, $this->extKey, $severity);
-				}
-				echo $message . chr(10);
+				$resultArray['RECORDS_TO_CLEAN'][] = $message;
+				$GLOBALS['TYPO3_DB']->sql_free_result($res);
 			}
-			echo chr(10);
+			$logMessage = 'Finished analyzing';
 		}
 
 			// Add entry to the sys_log to keep track of executions
@@ -195,9 +139,85 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			0,
 			0,
 			'cachecleaner',
-			'[cachecleaner]: Finished cleaning up',
+			'[cachecleaner]: ' . $logMessage,
 			array()
 		);
+
+		return $resultArray;
+	}
+
+	/**
+	 * This method is called by the lowlevel_cleaner script when running *with* the AUTOFIX option
+	 * 
+	 * @return	void
+	 * @see tx_lowlevel_cleaner_core::cli_main()
+	 */
+	public function main_autofix() {
+			// Perform clean up only if at least one table is configured
+			// NOTE: the AUTOFIX question will still be asked, as there no way
+			// to interrupt the process from here
+		if (count($this->cleanerConfiguration) > 0) {
+				// Loop on all configured tables
+			foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
+				echo sprintf($GLOBALS['LANG']->getLL('cleaningRecords'), $table) . ':' . chr(10);
+				if (($bypass = $this->cli_noExecutionCheck($table))) {
+					echo $bypass;
+				} else {
+					$configurationOK = true;
+					$field = '';
+					$dateLimit = '';
+						// Handle tables that have an explicit expiry field
+					if (isset($tableConfiguration['expireField'])) {
+						$field = $tableConfiguration['expireField'];
+						$dateLimit = $GLOBALS['EXEC_TIME'];
+
+						// Handle tables with a date field and a lifetime
+					} elseif (isset($tableConfiguration['dateField'])) {
+						$field = $tableConfiguration['dateField'];
+						$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
+
+						// No proper configuration field was found, skip this table
+					} else {
+						$configurationOK = false;
+					}
+
+						// If the configuration is ok, perform the actual query and write down the results
+					$message = '';
+					$severity = 0;
+					if ($configurationOK) {
+						$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $field . " <= '" . $dateLimit . "'");
+						$numDeletedRecords = $GLOBALS['TYPO3_DB']->sql_affected_rows($res);
+						$message =  sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords);
+							// Optimize the table, if the optimize flag was set
+							// NOTE: this is MySQL specific and will not work with another database type
+						if (isset($this->cli_args['--optimize'])) {
+							$GLOBALS['TYPO3_DB']->sql_query('OPTIMIZE TABLE ' . $table);
+							$message .=  ' ' . $GLOBALS['LANG']->getLL('tableOptimized');
+						}
+
+						// If the configuration is not ok, write out an error message
+					} else {
+						$message = $GLOBALS['LANG']->getLL('invalidConfiguration') . ' ' . $GLOBALS['LANG']->getLL('cleanupSkipped');
+						$severity = 2;
+					}
+					if ($this->extConf['debug'] || TYPO3_DLOG) {
+						t3lib_div::devLog('(' . $table. ') ' . $message, $this->extKey, $severity);
+					}
+					echo $message . chr(10);
+				}
+				echo chr(10);
+			}
+
+				// Add entry to the sys_log to keep track of executions
+			$GLOBALS['BE_USER']->writelog(
+				4,
+				0,
+				0,
+				'cachecleaner',
+				'[cachecleaner]: Finished cleaning up',
+				array()
+			);
+		}
 	}
 
 	/**
