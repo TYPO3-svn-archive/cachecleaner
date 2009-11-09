@@ -1,3 +1,7 @@
+2009-11-09 Francois Suter (Cobweb)  <typo3@cobweb.ch>
+
+	* Added storage of analysis results to avoid useless empty delete statements
+
 2009-11-06 Francois Suter (Cobweb)  <typo3@cobweb.ch>
 
 	* Ensured proper variables initialization everywhere
