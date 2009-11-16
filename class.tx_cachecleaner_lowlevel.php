@@ -104,15 +104,20 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 				$configurationOK = true;
 				$field = '';
 				$dateLimit = '';
+				$where = '';
 					// Handle tables that have an explicit expiry field
 				if (isset($tableConfiguration['expireField'])) {
 					$field = $tableConfiguration['expireField'];
 					$dateLimit = $GLOBALS['EXEC_TIME'];
+						// If expire field value is 0, do not delete
+						// Expire field = 0 means no expiration
+					$where = $field . " <= '" . $dateLimit . "' AND " . $field . " > '0'";
 
 					// Handle tables with a date field and a lifetime
 				} elseif (isset($tableConfiguration['dateField'])) {
 					$field = $tableConfiguration['dateField'];
 					$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
+					$where = $field . " <= '" . $dateLimit . "'";
 
 					// No proper configuration field was found, skip this table
 				} else {
@@ -124,7 +129,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 					// when the script is actually run
 				$message = '';
 				if ($configurationOK) {
-					$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $field . " <= '" . $dateLimit . "'");
+					$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $where);
 					$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
 					$message = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
 					$this->analysisResults[$table] = $row[0];
@@ -182,15 +187,20 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 						$configurationOK = true;
 						$field = '';
 						$dateLimit = '';
+						$where = '';
 							// Handle tables that have an explicit expiry field
 						if (isset($tableConfiguration['expireField'])) {
 							$field = $tableConfiguration['expireField'];
 							$dateLimit = $GLOBALS['EXEC_TIME'];
+								// If expire field value is 0, do not delete
+								// Expire field = 0 means no expiration
+							$where = $field . " <= '" . $dateLimit . "' AND " . $field . " > '0'";
 
 							// Handle tables with a date field and a lifetime
 						} elseif (isset($tableConfiguration['dateField'])) {
 							$field = $tableConfiguration['dateField'];
 							$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
+							$where = $field . " <= '" . $dateLimit . "'";
 
 							// No proper configuration field was found, skip this table
 						} else {
@@ -201,7 +211,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 						$message = '';
 						$severity = 0;
 						if ($configurationOK) {
-							$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $field . " <= '" . $dateLimit . "'");
+							$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $where);
 							$numDeletedRecords = $GLOBALS['TYPO3_DB']->sql_affected_rows($res);
 							$message =  sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords);
 								// Optimize the table, if the optimize flag was set

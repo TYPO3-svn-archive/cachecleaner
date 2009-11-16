@@ -1,3 +1,7 @@
+2009-11-16 Francois Suter (Cobweb)  <typo3@cobweb.ch>
+
+	* Added check to respect non-expiring records (expire field value = 0) (thanks to Roberto Presedo)
+
 2009-11-09 Francois Suter (Cobweb)  <typo3@cobweb.ch>
 
 	* Added storage of analysis results to avoid useless empty delete statements
