@@ -1,6 +1,7 @@
 2009-11-16 Francois Suter (Cobweb)  <typo3@cobweb.ch>
 
 	* Added check to respect non-expiring records (expire field value = 0) (thanks to Roberto Presedo)
+	* Released to TER as version 1.0.3
 
 2009-11-09 Francois Suter (Cobweb)  <typo3@cobweb.ch>
 
