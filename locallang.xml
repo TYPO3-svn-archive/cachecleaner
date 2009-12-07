@@ -11,7 +11,8 @@
 Several cache tables have an expiry field, but are never cleaned up automatically. This script provides such a service.
 It can also clean up other tables that have no expiry field, basing itself on any date field and given a lifetime for expiry.
 			</label>
-			<label index="options.optimize">Run OPTIMIZE on the tables after all appropriate records have been deleted</label>
+			<label index="options.optimize">Run OPTIMIZE on the tables after all appropriate records have been deleted.</label>
+			<label index="options.tables">Enter a comma-separated list of table names. Only these tables will be cleaned up, instead of the whole configured list. Ignore to clean up all tables.</label>
 			<label index="cleantest.header">Affected tables</label>
 			<label index="cleantest.description">Here is a list of all tables that could be cleaned up, along with the number of records that could be deleted given your current settings.</label>
 			<label index="recordsToDelete">Table %1$s: %2$d records to delete</label>

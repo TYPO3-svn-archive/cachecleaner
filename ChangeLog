@@ -1,3 +1,7 @@
+2009-12-07 Francois Suter (Cobweb)  <typo3@cobweb.ch>
+
+	* Added --tables option to restrict affected tables during a run
+
 2009-11-16 Francois Suter (Cobweb)  <typo3@cobweb.ch>
 
 	* Added check to respect non-expiring records (expire field value = 0) (thanks to Roberto Presedo)

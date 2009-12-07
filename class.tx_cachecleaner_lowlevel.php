@@ -36,6 +36,7 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 	protected $extConf = array(); // Extension configuration
 	protected $cleanerConfiguration = array(); // The configuration of tables to clean up
 	protected $analysisResults = array(); // The results of the analysis run
+	protected $selectedTables = array(); // List of tables to clean up
 
 	/**
 	 * Constructor
@@ -57,7 +58,11 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 		$this->cli_help['description'] = trim($GLOBALS['LANG']->getLL('description'));
 		$this->cli_help['author'] = 'Francois Suter, (c) 2009';
 		$this->cli_options[] = array('--optimize', $GLOBALS['LANG']->getLL('options.optimize'));
+		$this->cli_options[] = array('--tables table_names', $GLOBALS['LANG']->getLL('options.tables'));
 
+		if (!empty($this->cli_args['--tables'])) {
+			$this->selectedTables = t3lib_div::trimExplode(',', $this->cli_args['--tables'][0], TRUE);
+		}
 			// Add entry to the sys_log to keep track of executions
 		$GLOBALS['BE_USER']->writelog(
 			4,
@@ -101,44 +106,47 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 			// Loop on all configured tables
 		} else {
 			foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
-				$configurationOK = true;
-				$field = '';
-				$dateLimit = '';
-				$where = '';
-					// Handle tables that have an explicit expiry field
-				if (isset($tableConfiguration['expireField'])) {
-					$field = $tableConfiguration['expireField'];
-					$dateLimit = $GLOBALS['EXEC_TIME'];
-						// If expire field value is 0, do not delete
-						// Expire field = 0 means no expiration
-					$where = $field . " <= '" . $dateLimit . "' AND " . $field . " > '0'";
+					// Perform operations only if table is selected or all tables are allowed
+				if (count($this->selectedTables) == 0 || in_array($table, $this->selectedTables)) {
+					$configurationOK = true;
+					$field = '';
+					$dateLimit = '';
+					$where = '';
+						// Handle tables that have an explicit expiry field
+					if (isset($tableConfiguration['expireField'])) {
+						$field = $tableConfiguration['expireField'];
+						$dateLimit = $GLOBALS['EXEC_TIME'];
+							// If expire field value is 0, do not delete
+							// Expire field = 0 means no expiration
+						$where = $field . " <= '" . $dateLimit . "' AND " . $field . " > '0'";
 
-					// Handle tables with a date field and a lifetime
-				} elseif (isset($tableConfiguration['dateField'])) {
-					$field = $tableConfiguration['dateField'];
-					$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
-					$where = $field . " <= '" . $dateLimit . "'";
+						// Handle tables with a date field and a lifetime
+					} elseif (isset($tableConfiguration['dateField'])) {
+						$field = $tableConfiguration['dateField'];
+						$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
+						$where = $field . " <= '" . $dateLimit . "'";
 
-					// No proper configuration field was found, skip this table
-				} else {
-					$configurationOK = false;
+						// No proper configuration field was found, skip this table
+					} else {
+						$configurationOK = false;
+					}
+
+						// If the configuration is ok, perform the actual query and write down the results
+						// Also store the results for each table, so that no pointless DELETE is performed
+						// when the script is actually run
+					$message = '';
+					if ($configurationOK) {
+						$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $where);
+						$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
+						$message = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
+						$this->analysisResults[$table] = $row[0];
+					} else {
+						$message = '!!! ' . sprintf($GLOBALS['LANG']->getLL('invalidConfigurationForTable'), $table);
+						$this->analysisResults[$table] = 0;
+					}
+					$resultArray['RECORDS_TO_CLEAN'][] = $message;
+					$GLOBALS['TYPO3_DB']->sql_free_result($res);
 				}
-
-					// If the configuration is ok, perform the actual query and write down the results
-					// Also store the results for each table, so that no pointless DELETE is performed
-					// when the script is actually run
-				$message = '';
-				if ($configurationOK) {
-					$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*) AS total', $table, $where);
-					$row = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);
-					$message = sprintf($GLOBALS['LANG']->getLL('recordsToDelete'), $table, $row[0]);
-					$this->analysisResults[$table] = $row[0];
-				} else {
-					$message = '!!! ' . sprintf($GLOBALS['LANG']->getLL('invalidConfigurationForTable'), $table);
-					$this->analysisResults[$table] = 0;
-				}
-				$resultArray['RECORDS_TO_CLEAN'][] = $message;
-				$GLOBALS['TYPO3_DB']->sql_free_result($res);
 			}
 			$logMessage = 'Finished analyzing';
 		}
@@ -169,70 +177,73 @@ class tx_cachecleaner_lowlevel extends tx_lowlevel_cleaner_core {
 		if (count($this->cleanerConfiguration) > 0) {
 				// Loop on all configured tables
 			foreach ($this->cleanerConfiguration as $table => $tableConfiguration) {
-					// If the analysis run returned 0 records to clean up,
-					// avoid clean up entirely for this table
-				if ($this->analysisResults[$table] == 0) {
-					$message =  sprintf($GLOBALS['LANG']->getLL('noRecordsToDelete'), $table);
-					if ($this->extConf['debug'] || TYPO3_DLOG) {
-						t3lib_div::devLog('(' . $table. ') ' . $GLOBALS['LANG']->getLL('noDeletedRecords'), $this->extKey, 0);
-					}
-					echo $message . chr(10);
-
-					// There are records to clean up, proceed
-				} else {
-					echo sprintf($GLOBALS['LANG']->getLL('cleaningRecords'), $table) . ':' . chr(10);
-					if (($bypass = $this->cli_noExecutionCheck($table))) {
-						echo $bypass;
-					} else {
-						$configurationOK = true;
-						$field = '';
-						$dateLimit = '';
-						$where = '';
-							// Handle tables that have an explicit expiry field
-						if (isset($tableConfiguration['expireField'])) {
-							$field = $tableConfiguration['expireField'];
-							$dateLimit = $GLOBALS['EXEC_TIME'];
-								// If expire field value is 0, do not delete
-								// Expire field = 0 means no expiration
-							$where = $field . " <= '" . $dateLimit . "' AND " . $field . " > '0'";
-
-							// Handle tables with a date field and a lifetime
-						} elseif (isset($tableConfiguration['dateField'])) {
-							$field = $tableConfiguration['dateField'];
-							$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
-							$where = $field . " <= '" . $dateLimit . "'";
-
-							// No proper configuration field was found, skip this table
-						} else {
-							$configurationOK = false;
-						}
-
-							// If the configuration is ok, perform the actual query and write down the results
-						$message = '';
-						$severity = 0;
-						if ($configurationOK) {
-							$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $where);
-							$numDeletedRecords = $GLOBALS['TYPO3_DB']->sql_affected_rows($res);
-							$message =  sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords);
-								// Optimize the table, if the optimize flag was set
-								// NOTE: this is MySQL specific and will not work with another database type
-							if (isset($this->cli_args['--optimize'])) {
-								$GLOBALS['TYPO3_DB']->sql_query('OPTIMIZE TABLE ' . $table);
-								$message .=  ' ' . $GLOBALS['LANG']->getLL('tableOptimized');
-							}
-
-							// If the configuration is not ok, write out an error message
-						} else {
-							$message = $GLOBALS['LANG']->getLL('invalidConfiguration') . ' ' . $GLOBALS['LANG']->getLL('cleanupSkipped');
-							$severity = 2;
-						}
+					// Perform operations only if table is selected or all tables are allowed
+				if (count($this->selectedTables) == 0 || in_array($table, $this->selectedTables)) {
+						// If the analysis run returned 0 records to clean up,
+						// avoid clean up entirely for this table
+					if ($this->analysisResults[$table] == 0) {
+						$message =  sprintf($GLOBALS['LANG']->getLL('noRecordsToDelete'), $table);
 						if ($this->extConf['debug'] || TYPO3_DLOG) {
-							t3lib_div::devLog('(' . $table. ') ' . $message, $this->extKey, $severity);
+							t3lib_div::devLog('(' . $table. ') ' . $GLOBALS['LANG']->getLL('noDeletedRecords'), $this->extKey, 0);
 						}
 						echo $message . chr(10);
+
+						// There are records to clean up, proceed
+					} else {
+						echo sprintf($GLOBALS['LANG']->getLL('cleaningRecords'), $table) . ':' . chr(10);
+						if (($bypass = $this->cli_noExecutionCheck($table))) {
+							echo $bypass;
+						} else {
+							$configurationOK = true;
+							$field = '';
+							$dateLimit = '';
+							$where = '';
+								// Handle tables that have an explicit expiry field
+							if (isset($tableConfiguration['expireField'])) {
+								$field = $tableConfiguration['expireField'];
+								$dateLimit = $GLOBALS['EXEC_TIME'];
+									// If expire field value is 0, do not delete
+									// Expire field = 0 means no expiration
+								$where = $field . " <= '" . $dateLimit . "' AND " . $field . " > '0'";
+
+								// Handle tables with a date field and a lifetime
+							} elseif (isset($tableConfiguration['dateField'])) {
+								$field = $tableConfiguration['dateField'];
+								$dateLimit = $this->calculateDateLimit($tableConfiguration['expirePeriod']);
+								$where = $field . " <= '" . $dateLimit . "'";
+
+								// No proper configuration field was found, skip this table
+							} else {
+								$configurationOK = false;
+							}
+
+								// If the configuration is ok, perform the actual query and write down the results
+							$message = '';
+							$severity = 0;
+							if ($configurationOK) {
+								$res = $GLOBALS['TYPO3_DB']->exec_DELETEquery($table, $where);
+								$numDeletedRecords = $GLOBALS['TYPO3_DB']->sql_affected_rows($res);
+								$message =  sprintf($GLOBALS['LANG']->getLL('deletedRecords'), $numDeletedRecords);
+									// Optimize the table, if the optimize flag was set
+									// NOTE: this is MySQL specific and will not work with another database type
+								if (isset($this->cli_args['--optimize'])) {
+									$GLOBALS['TYPO3_DB']->sql_query('OPTIMIZE TABLE ' . $table);
+									$message .=  ' ' . $GLOBALS['LANG']->getLL('tableOptimized');
+								}
+
+								// If the configuration is not ok, write out an error message
+							} else {
+								$message = $GLOBALS['LANG']->getLL('invalidConfiguration') . ' ' . $GLOBALS['LANG']->getLL('cleanupSkipped');
+								$severity = 2;
+							}
+							if ($this->extConf['debug'] || TYPO3_DLOG) {
+								t3lib_div::devLog('(' . $table. ') ' . $message, $this->extKey, $severity);
+							}
+							echo $message . chr(10);
+						}
 					}
+					echo chr(10);
 				}
-				echo chr(10);
 			}
 
 				// Add entry to the sys_log to keep track of executions
