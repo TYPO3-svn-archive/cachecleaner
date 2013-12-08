@@ -1,3 +1,8 @@
+2013-12-08 Francois Suter (Cobweb)  <typo3@cobweb.ch>
+
+	* Set compatibility limit to TYPO3 4.5, resolves #53861
+	* Released to TER as version 1.1.1
+
 2009-12-07 Francois Suter (Cobweb)  <typo3@cobweb.ch>
 
 	* Added --tables option to restrict affected tables during a run
